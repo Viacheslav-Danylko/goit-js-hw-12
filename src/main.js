@@ -2,15 +2,16 @@ import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
+
 import { fetchImages } from './js/pixabay-api';
-import { renderImages, showLoader, hideLoader } from './js/render-functions';
+import { renderImages, showLoader, hideLoader, showMore, hideMore } from './js/render-functions';
 
 const form = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 let lightbox = null;
 let page = 1;
 const pagePer = 15;
-const loadMore = document.querySelector('.load-more');
+const loadBtn = document.querySelector('.load-more');
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -82,31 +83,33 @@ function smoothScroll() {
   });
 }
 
-loadMore.addEventListener('click', async () => {
+loadBtn.addEventListener('click', async () => {
   page += 1;
   const inputValue = form.elements.query.value.trim().toLowerCase();
   try {
     showLoader();
     const images = await fetchImages(inputValue, page, pagePer);
-    renderImages(images);
-    lightbox.refresh();
-    hideLoader();
-
-    if (images.hits.length < pagePer) {
-      hideMore();
+    if (images.hits.length === 0) {
       iziToast.info({
-        message: "We're sorry, but you've reached the end of search results.",
+        title: '',
+        message: "No more images found.",
         position: 'topRight',
         backgroundColor: '#2196F3',
         maxWidth: '432px',
         messageColor: '#fff',
         iconColor: '#fff'
       });
+      hideLoader();
+      return;
     }
+    renderImages(images);
+    lightbox.refresh();
+    hideLoader();
+    smoothScroll();  // Прокрутка после подгрузки
   } catch (error) {
-    console.log(error);
     iziToast.error({
-      message: 'Something went wrong. Please try again!',
+      title: '',
+      message: 'Error loading images. Please try again!',
       position: 'topRight',
       backgroundColor: '#EF4040',
       maxWidth: '432px',
