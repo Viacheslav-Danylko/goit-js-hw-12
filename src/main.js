@@ -12,64 +12,54 @@ let lightbox = null;
 let page = 1;
 const pagePer = 15;
 const loadBtn = document.querySelector('.load-more');
+let currentQuery = '';  // Нова змінна для збереження пошукового запиту
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   const inputValue = form.elements.query.value.trim().toLowerCase();
   if (inputValue === '') {
-    iziToast.error({
-      title: '',
-      message: 'Sorry, there are no images matching your search query. Please try again!',
-      position: 'topRight',
-      backgroundColor: '#EF4040',
-      maxWidth: '432px',
-      messageColor: '#fff',
-      iconColor: '#fff'
-    });
-
+    showErrorToast('Sorry, there are no images matching your search query. Please try again!');
     return;
-  };
+  }
 
   gallery.innerHTML = '';
+  form.elements.query.value = '';  // Очищення поля введення
   page = 1;
+  currentQuery = inputValue;  // Збереження запиту в змінну
 
   try {
     showLoader();
-    const images = await fetchImages(inputValue, page, pagePer);
+    const images = await fetchImages(currentQuery, page, pagePer);  // Використання currentQuery
     renderImages(images);
     lightbox = new SimpleLightbox('.gallery a').refresh();
     hideLoader();
-
-    if (images.hits.length >= pagePer) {
-      showMore();
-    } else {
-      hideMore();
-    }
-    if (images.totalHits === 0) {
-      hideLoader();
-      iziToast.warning({
-        title: '',
-        message: 'No images matching your search query. Please try again!',
-        position: 'topRight',
-        backgroundColor: '#EF4040',
-        maxWidth: '432px',
-        messageColor: '#fff',
-        iconColor: '#fff'
-      });
-    }
+    toggleLoadMore(images.hits.length, images.totalHits);
   } catch (error) {
-    console.log(error);
-    iziToast.error({
-      title: '',
-      message: 'Something went wrong. Please try again!',
-      position: 'topRight',
-      backgroundColor: '#EF4040',
-      maxWidth: '432px',
-      messageColor: '#fff',
-      iconColor: '#fff'
-    });
-  };
+    hideLoader();
+    showErrorToast('Something went wrong. Please try again!');
+  }
+});
+
+loadBtn.addEventListener('click', async () => {
+  page += 1;
+  try {
+    showLoader();
+    const images = await fetchImages(currentQuery, page, pagePer);  // Використання збереженого currentQuery
+    if (images.hits.length === 0) {
+      showInfoToast('No more images found.');
+      hideLoader();
+      return;
+    }
+    renderImages(images);
+    lightbox.refresh();
+    hideLoader();
+    toggleLoadMore(images.hits.length, images.totalHits);
+    smoothScroll();  // Прокрутка після підгрузки
+  } catch (error) {
+    hideLoader();
+    showErrorToast('Error loading images. Please try again!');
+  }
 });
 
 function smoothScroll() {
@@ -83,38 +73,35 @@ function smoothScroll() {
   });
 }
 
-loadBtn.addEventListener('click', async () => {
-  page += 1;
-  const inputValue = form.elements.query.value.trim().toLowerCase();
-  try {
-    showLoader();
-    const images = await fetchImages(inputValue, page, pagePer);
-    if (images.hits.length === 0) {
-      iziToast.info({
-        title: '',
-        message: "No more images found.",
-        position: 'topRight',
-        backgroundColor: '#2196F3',
-        maxWidth: '432px',
-        messageColor: '#fff',
-        iconColor: '#fff'
-      });
-      hideLoader();
-      return;
-    }
-    renderImages(images);
-    lightbox.refresh();
-    hideLoader();
-    smoothScroll();  // Прокрутка после подгрузки
-  } catch (error) {
-    iziToast.error({
-      title: '',
-      message: 'Error loading images. Please try again!',
-      position: 'topRight',
-      backgroundColor: '#EF4040',
-      maxWidth: '432px',
-      messageColor: '#fff',
-      iconColor: '#fff'
-    });
+function toggleLoadMore(currentHits, totalHits) {
+  if (currentHits >= pagePer && page * pagePer < totalHits) {
+    showMore();
+  } else {
+    hideMore();
   }
-});
+}
+
+// Функції для показу повідомлень (iZiToast)
+function showErrorToast(message) {
+  iziToast.error({
+    title: '',
+    message: message,
+    position: 'topRight',
+    backgroundColor: '#EF4040',
+    maxWidth: '432px',
+    messageColor: '#fff',
+    iconColor: '#fff'
+  });
+}
+
+function showInfoToast(message) {
+  iziToast.info({
+    title: '',
+    message: message,
+    position: 'topRight',
+    backgroundColor: '#2196F3',
+    maxWidth: '432px',
+    messageColor: '#fff',
+    iconColor: '#fff'
+  });
+}
