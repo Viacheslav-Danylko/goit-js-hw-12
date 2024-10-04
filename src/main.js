@@ -30,7 +30,7 @@ form.addEventListener('submit', async (event) => {
 
   try {
     showLoader();
-    const images = await fetchImages(currentQuery, page, pagePer);  // Використання currentQuery
+    const images = await fetchImages(currentQuery, page, pagePer);
     renderImages(images);
     lightbox = new SimpleLightbox('.gallery a').refresh();
     hideLoader();
@@ -45,7 +45,7 @@ loadBtn.addEventListener('click', async () => {
   page += 1;
   try {
     showLoader();
-    const images = await fetchImages(currentQuery, page, pagePer);  // Використання збереженого currentQuery
+    const images = await fetchImages(currentQuery, page, pagePer);
     if (images.hits.length === 0) {
       showInfoToast('No more images found.');
       hideLoader();
